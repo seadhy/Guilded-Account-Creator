@@ -1,4 +1,4 @@
-# Github Profile View Booster
+# Guilded Account Creator + Joiner
  Guilded Account Creator + Joiner with fully httpx request based.
 
 ## 💻 Preview Video
