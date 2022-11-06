@@ -1,0 +1,5 @@
+{
+    "invite_code": "invite code, only CODE",
+    "save_method": "text or sqlite or both",
+    "threads": 10
+}
