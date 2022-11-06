@@ -14,10 +14,7 @@ https://user-images.githubusercontent.com/82868382/200177362-930265ad-fd59-4e26-
 
 ## 🌟 Stars
 
-25 Stars = Automatically adding pfp to the account
-
-50 Stars = Automatically verify mail
-
+25 Stars = Automatically verify mail
 
 ## ✍️ Usage
 1. Run `install.bat`
