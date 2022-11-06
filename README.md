@@ -3,11 +3,11 @@
 
 ## 💻 Preview Video
 
-https://user-images.githubusercontent.com/82868382/200177362-930265ad-fd59-4e26-90e5-b948ea04910a.mp4
+https://user-images.githubusercontent.com/82868382/200184674-38b6e371-0dea-420a-8e66-171233f6254d.mp4
 
 ## 👾 Features
 - Fully request based creator
-- Auto change tagline and bio
+- Auto change pfp, bio and tagline
 - Save accounts SQLite database and text file
 - HTTP&HTTPS proxy support
 - Multi-Threading support

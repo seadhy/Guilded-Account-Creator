@@ -44,6 +44,7 @@ class Generator:
         self.proxies = open('data/proxies.txt','r',encoding='utf-8').read().splitlines()
         self.bioes = open('data/bioes.txt','r',encoding='utf-8').read().splitlines()
         self.taglines = open('data/taglines.txt','r',encoding='utf-8').read().splitlines()
+        self.pfps = open('data/pfps.txt','r',encoding='utf-8').read().splitlines()
 
         self.save_method = self.config_file['save_method']
         self.threads = self.config_file['threads']
@@ -57,8 +58,7 @@ class Generator:
         self.connection = sqlite3.connect('saved/database.db', check_same_thread=False)
         self.cursor = self.connection.cursor()
         
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS accounts (ID TEXT, Username TEXT, Password TEXT, Mail TEXT)')
-        
+        self.cursor.execute('CREATE TABLE IF NOT EXISTS accounts (ID TEXT, Username TEXT, Password TEXT, Mail TEXT, Token TEXT)')
         
         self.lock = threading.Lock()
     
@@ -152,11 +152,16 @@ class Generator:
             }
 
             send_data = json.dumps(payload)
-
+            session.headers["content-length"] = str(len(send_data))
             r = session.put(url=f'https://www.guilded.gg/api/users/{id}/profilev2', data=send_data)
             
-            if r.status_code == 200:
-                self.console.printhm('Bio successfully changed.')
+            payload = json.dumps({"imageUrl": choice(self.pfps)})
+            session.headers["content-length"] = str(len(payload))
+            
+            r2 = session.post(url='https://www.guilded.gg/api/users/me/profile/images', data=payload)
+            
+            if r.status_code == 200 and r2.status_code == 200:
+                self.console.printhm('Bio and pfps successfully changed.')
                 break
             elif 'Bio has invalid characters' in r.text:
                 self.console.printe(f'Invalid bio: \'{bio}\', retrying...')
@@ -165,14 +170,14 @@ class Generator:
                 self.console.printe('Bio Error!')
                 # * print(r.text,r.status_code) debugging
         
-    def saveData(self, id: str, username: str, password: str, mail: str):
+    def saveData(self, id: str, username: str, password: str, mail: str, token: str):
         if self.save_method == 'both' or self.save_method =='sqlite':
-            self.cursor.execute('Insert into accounts Values(?,?,?,?)', (id, username, password, mail))
+            self.cursor.execute('Insert into accounts Values(?,?,?,?,?)', (id, username, password, mail, token))
             self.connection.commit()
         
         if self.save_method == 'both' or self.save_method == 'text':
             with open('saved/accounts.txt','a',encoding='utf-8') as f:
-                f.write(f'{username}:{mail}:{password}\n')
+                f.write(f'{username}:{mail}:{password}:{token}\n')
     
     def createAccount(self):
         while True:
@@ -228,7 +233,7 @@ class Generator:
                         continue
                     
                 session.headers["cookie"] = str_cookies + "; " + self.formatCookies(r.cookies.items())
-
+                token = r.cookies.get('hmac_signed_session')
                 if r.status_code == 200:
                     id = r.json()['user']['id']
                     self.console.printsc(f'{username} created by name.')
@@ -237,14 +242,16 @@ class Generator:
 
                     data = self.loginInformation(session, id)
 
-                    self.saveData(id,username,data[1],data[0])
+                    self.saveData(id,username,data[1],data[0],token)
                     self.joinServer(session)
                     self.Humanization(session, id)
 
                 elif "You have been banned" in r.text:
                     self.console.printe(f'Banned IP: {proxy}, retrying...')
-                    sleep(3)
-                    continue     
+                    sleep(1)  
+                else:
+                    self.console.printe('Account not created, retrying...')
+                    sleep(1)
             except Exception as e:
                 self.console.printe(str(e).capitalize()+".")
                 sleep(1)
