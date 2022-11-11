@@ -1,44 +1,18 @@
 import httpx,json,string,sqlite3,threading
 from random import choice,choices
-from os import system
 from time import sleep
-from pystyle import Center,Colors,Colorate,System
-from modules.console import Console
-from ctypes import windll
+from pystyle import System
+from modules.console import Tools,Console
+from modules.username_creator import getUsername
 
 System.Size(200,40)
 
-def clear():
-  system('cls')
-
-def setTitle(threads: int, proxies: int, created: int):
-    windll.kernel32.SetConsoleTitleW(f"Seasmash Guilded Creator  |  Threads: {threads}  |  Loaded Proxies: {proxies}  |  Created: {created}  |  Made by github.com/seadhy")
-  
-def printLogo():
-    print(Colorate.Vertical(Colors.purple_to_blue, Center.XCenter("""
-        
-   ▄████████    ▄████████    ▄████████    ▄████████   ▄▄▄▄███▄▄▄▄      ▄████████    ▄████████    ▄█    █▄    
-  ███    ███   ███    ███   ███    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███   ███    ███   ███    ███   
-  ███    █▀    ███    █▀    ███    ███   ███    █▀  ███   ███   ███   ███    ███   ███    █▀    ███    ███   
-  ███         ▄███▄▄▄       ███    ███   ███        ███   ███   ███   ███    ███   ███         ▄███▄▄▄▄███▄▄ 
-▀███████████ ▀▀███▀▀▀     ▀███████████ ▀███████████ ███   ███   ███ ▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
-         ███   ███    █▄    ███    ███          ███ ███   ███   ███   ███    ███          ███   ███    ███   
-   ▄█    ███   ███    ███   ███    ███    ▄█    ███ ███   ███   ███   ███    ███    ▄█    ███   ███    ███   
- ▄████████▀    ██████████   ███    █▀   ▄████████▀   ▀█   ███   █▀    ███    █▀   ▄████████▀    ███    █▀   
-  
-              ⌜――――――――――――――――――――――――――――――――――――――――――――――――――――⌝
-              ┇      [Discord] https://discord.gg/6hP3mHKSqf       ┇
-              ┇      [Github]  https://github.com/seadhy           ┇
-              ⌞――――――――――――――――――――――――――――――――――――――――――――――――――――⌟
-              
-              
-              """)))
-
-clear()
-printLogo()
-
 class Generator:
-    def __init__(self) -> None:
+    def __init__(self) -> None: 
+        self.tools = Tools()
+        self.tools.clear()
+        self.tools.printLogo()
+        
         self.config_file = json.load(open('data/config.json','r',encoding='utf-8'))
         self.usernames = open('data/usernames.txt','r',encoding='utf-8').read().splitlines()
         self.proxies = open('data/proxies.txt','r',encoding='utf-8').read().splitlines()
@@ -49,9 +23,11 @@ class Generator:
         self.save_method = self.config_file['save_method']
         self.threads = self.config_file['threads']
         self.invite_code = self.config_file['invite_code']
+        self.use_proxy = self.config_file['use_proxy']
+        self.random_usernames = self.config_file['random_usernames']
         
         self.created = 0
-        setTitle(self.threads, len(self.proxies), self.created)
+        self.tools.setTitle(self.threads, len(self.proxies), self.created)
         
         self.console = Console()
         
@@ -61,7 +37,10 @@ class Generator:
         self.cursor.execute('CREATE TABLE IF NOT EXISTS accounts (ID TEXT, Username TEXT, Password TEXT, Mail TEXT, Token TEXT)')
         
         self.lock = threading.Lock()
-    
+        
+        if len(self.usernames) == 0: self.random_usernames = 'y'
+        if len(self.proxies) == 0: self.use_proxy = 'n'
+            
     def print(self, arg):
         self.lock.acquire()
         print(arg)
@@ -88,7 +67,7 @@ class Generator:
                 headers = {
                     "accept": "*/*",
                     "accept-encoding": "gzip, deflate, br",
-                    "accept-language": "tr-TR,tr;q=0.7",
+                    "accept-language": "en-US,en;q=0.7",
                     "dnt": "1",
                     "guilded-client-id": self.getClientID(),
                     "guilded-viewer-platform": "desktop",
@@ -106,32 +85,12 @@ class Generator:
             except httpx.ProxyError:
                 self.console.printe('Proxy error, retrying...')
                 continue
-            
-    def loginInformation(self, session: httpx.Client, id: str):
-        text = choices(string.ascii_lowercase+string.digits,k=16)
-        mail_text = str()
-        for x in text: mail_text += x
-        mail_address = f"{mail_text}{choice(['@gmail.com','@yahoo.com','@outlook.com','@hotmail.com'])}"
-    
-        
-        password = "".join(choices(string.ascii_letters+string.digits,k=12))
-        payload = {
-            "userId": id,
-            "email": mail_address,
-            "password": password
-        }
-        
-        del session.headers["content-length"]
-        del session.headers["guilded-stag"]
-        
-        r = session.put(url=f'https://www.guilded.gg/api/users/{id}/profilev2', data=json.dumps(payload))
-        if 'success' in r.text:
-            self.console.printi('Email and password added to account!')
-            return mail_address,password
-    
+
     def joinServer(self, session: httpx.Client):
+       session.headers['content-length'] = "19"
        
        r = session.put(url=f'https://www.guilded.gg/api/invites/{self.invite_code}', data=json.dumps({"type":"consume"}))
+       
        if r.status_code == 200:
            self.console.printjs(f"{self.invite_code} invite code joined.")
        else:
@@ -151,23 +110,24 @@ class Generator:
                 }
             }
 
-            send_data = json.dumps(payload)
-            session.headers["content-length"] = str(len(send_data))
-            r = session.put(url=f'https://www.guilded.gg/api/users/{id}/profilev2', data=send_data)
+
+            session.headers["content-length"] = str(len(json.dumps(payload)))
             
-            payload = json.dumps({"imageUrl": choice(self.pfps)})
-            session.headers["content-length"] = str(len(payload))
+            r = session.put(url=f'https://www.guilded.gg/api/users/{id}/profilev2', data=json.dumps(payload))
             
-            r2 = session.post(url='https://www.guilded.gg/api/users/me/profile/images', data=payload)
+            
+            session.headers["content-length"] = str(len(json.dumps({"imageUrl": choice(self.pfps)})))
+            
+            r2 = session.post(url='https://www.guilded.gg/api/users/me/profile/images', data=json.dumps({"imageUrl": choice(self.pfps)}))
             
             if r.status_code == 200 and r2.status_code == 200:
-                self.console.printhm('Bio and pfps successfully changed.')
+                self.console.printhm('Bio and pfp successfully changed.')
                 break
             elif 'Bio has invalid characters' in r.text:
                 self.console.printe(f'Invalid bio: \'{bio}\', retrying...')
                 sleep(1)
             else:
-                self.console.printe('Bio Error!')
+                self.console.printe('Bio Error! Retrying...')
                 # * print(r.text,r.status_code) debugging
         
     def saveData(self, id: str, username: str, password: str, mail: str, token: str):
@@ -182,25 +142,44 @@ class Generator:
     def createAccount(self):
         while True:
             try:
-                proxy = choice(self.proxies)
+                if self.use_proxy == 'y':
+                    proxy = choice(self.proxies)
 
-                proxies = {
-                    "http://": f"http://{proxy}",
-                    "https://": f"http://{proxy}"
-                }
+                    proxies = {
+                        "http://": f"http://{proxy}",
+                        "https://": f"http://{proxy}"
+                    }
 
-                session = httpx.Client(proxies=proxies)
+                    session = httpx.Client(proxies=proxies)
+                else:
+                    session = httpx.Client()
                 cookies = self.getCookies(session)
 
                 str_cookies = cookies[0]
                 client_id = cookies[1]
 
-                username = choice(self.usernames)
+                if self.random_usernames == 'y':
+                    username = getUsername()
+                else:
+                    username = choice(self.usernames)
+                
+                text = choices(string.ascii_lowercase+string.digits,k=16)
+                
+                mail_text = str()
+                for x in text: mail_text += x
+                
+                mail_address = f"{mail_text}{choice(['@gmail.com','@yahoo.com','@outlook.com','@hotmail.com'])}"
+                
+                password = "".join(choices(string.ascii_letters+string.digits,k=12))
+                
                 payload = {
                     "extraInfo": {
                         "platform": "desktop"
                     },
-                    "username": username
+                    "name": username,
+                    "email": mail_address,
+                    "password": password,
+                    "fullName": username
                 }
 
                 session.headers = {
@@ -227,22 +206,21 @@ class Generator:
 
                 while True:
                     try:
-                        r = session.post(url='https://www.guilded.gg/api/users?type=username', json=payload, timeout=30)
+                        r = session.post(url='https://www.guilded.gg/api/users?type=email', json=payload, timeout=30)
                         break
                     except:
                         continue
-                    
+                
                 session.headers["cookie"] = str_cookies + "; " + self.formatCookies(r.cookies.items())
+                
                 token = r.cookies.get('hmac_signed_session')
-                if r.status_code == 200:
+                if r.status_code == 200 and token != None:
                     id = r.json()['user']['id']
                     self.console.printsc(f'{username} created by name.')
                     self.created += 1
-                    setTitle(self.threads, len(self.proxies), self.created)
+                    self.tools.setTitle(self.threads, len(self.proxies), self.created)
 
-                    data = self.loginInformation(session, id)
-
-                    self.saveData(id,username,data[1],data[0],token)
+                    self.saveData(id,username,password,mail_address,token)
                     self.joinServer(session)
                     self.Humanization(session, id)
 
@@ -255,7 +233,7 @@ class Generator:
             except Exception as e:
                 self.console.printe(str(e).capitalize()+".")
                 sleep(1)
-                
+               
     def Run(self):
         while threading.active_count() < self.threads+1:
             threading.Thread(target=self.createAccount).start()      
