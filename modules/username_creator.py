@@ -1,4 +1,4 @@
-# thank you github.com/6accOnThe6locc
+#  thank you github.com/6accOnThe6locc
 
 from random import randint, choice, choices
 
