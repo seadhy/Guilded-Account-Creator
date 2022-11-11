@@ -42,4 +42,5 @@ for x in r.json()['members']:
         continue  
 
 print(f'Completed! Total Scraped URLs -> {counter}.')
+
 input('[>] Press enter and close ')
