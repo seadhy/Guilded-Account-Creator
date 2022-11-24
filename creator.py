@@ -1,6 +1,7 @@
 import httpx,json,string,sqlite3,threading
 from random import choice,choices
 from time import sleep
+from uuid import uuid4
 from pystyle import System
 from modules.console import Tools,Console
 from modules.username_creator import getUsername
@@ -45,15 +46,6 @@ class Generator:
         self.lock.acquire()
         print(arg)
         self.lock.release()
-        
-    def getClientID(self):
-        chars = '0123456789abcdef'
-        value1 = "".join(choices(chars,k=8))
-        value2 = "".join(choices(chars,k=4))
-        value3 = "".join(choices(chars,k=4))
-        value4 = "".join(choices(chars,k=4))
-        value5 = "".join(choices(chars,k=12))
-        return "-".join((value1,value2,value3,value4,value5))
     
 
     def formatCookies(self, items: dict) -> str:
@@ -69,7 +61,7 @@ class Generator:
                     "accept-encoding": "gzip, deflate, br",
                     "accept-language": "en-US,en;q=0.7",
                     "dnt": "1",
-                    "guilded-client-id": self.getClientID(),
+                    "guilded-client-id": str(uuid4()),
                     "guilded-viewer-platform": "desktop",
                     "referer": "https://www.guilded.gg/",
                     "sec-fetch-dest": "empty",
@@ -238,7 +230,8 @@ class Generator:
         while threading.active_count() < self.threads+1:
             threading.Thread(target=self.createAccount).start()      
             sleep(0.75) 
-            
+
+
 if __name__ == '__main__':
     gen = Generator()
     gen.Run()
