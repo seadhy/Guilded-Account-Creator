@@ -14,7 +14,7 @@ https://user-images.githubusercontent.com/82868382/200184674-38b6e371-0dea-420a-
 
 ## 🌟 Stars
 
-25 Stars = Automatically verify mail
+50 Stars = Automatically verify mail
 
 ## ✍️ Usage
 1. Run `install.bat`
